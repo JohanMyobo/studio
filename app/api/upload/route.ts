@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, unlink, mkdir } from "fs/promises";
-import path from "path";
 import { supabase } from "@/lib/supabase/client";
+
+const BUCKET = "project-assets";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,17 +15,24 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads", projectId);
-    await mkdir(uploadDir, { recursive: true });
+    const mime = file.type;
 
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const filename = `${Date.now()}_${safeName}`;
-    const filepath = path.join(uploadDir, filename);
-    await writeFile(filepath, buffer);
+    const storageKey = `${projectId}/${Date.now()}_${safeName}`;
 
-    const url = `/uploads/${projectId}/${filename}`;
-    const mime = file.type;
+    const { error: storageError } = await supabase.storage
+      .from(BUCKET)
+      .upload(storageKey, buffer, { contentType: mime, upsert: false });
+
+    if (storageError) {
+      console.error("Storage error:", storageError);
+      return NextResponse.json({ error: storageError.message }, { status: 500 });
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(BUCKET)
+      .getPublicUrl(storageKey);
+
     const type = mime.startsWith("image/")
       ? "image"
       : mime === "application/pdf"
@@ -39,7 +46,7 @@ export async function POST(request: NextRequest) {
       .insert({
         name: file.name,
         type,
-        url,
+        url: publicUrl,
         size: file.size,
         mime_type: mime,
         project_id: projectId,
@@ -67,11 +74,15 @@ export async function DELETE(request: NextRequest) {
 
     if (!asset) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+    // Extract storage key from URL if it's a Supabase Storage URL
     try {
-      const filepath = path.join(process.cwd(), "public", asset.url);
-      await unlink(filepath);
+      const urlObj = new URL(asset.url);
+      const pathParts = urlObj.pathname.split(`/${BUCKET}/`);
+      if (pathParts.length > 1) {
+        await supabase.storage.from(BUCKET).remove([pathParts[1]]);
+      }
     } catch {
-      // File may not exist, continue
+      // Non-storage URL, skip
     }
 
     await supabase.from("assets").delete().eq("id", id);

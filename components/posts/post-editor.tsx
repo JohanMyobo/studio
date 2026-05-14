@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sparkles, Loader2, Save, Trash2, ExternalLink,
-  ThumbsUp, Eye, MessageCircle, Share2,
+  ThumbsUp, Eye, MessageCircle, Share2, FileText, Image, File, Check,
 } from "lucide-react";
 import { updatePost, deletePost } from "@/lib/actions/posts";
 import { generatePostContent } from "@/lib/actions/ai";
@@ -31,6 +31,21 @@ const TONES = [
   { value: "promotional", label: "Promotionnel" },
 ];
 
+const ASSET_ICONS: Record<string, React.ElementType> = {
+  image: Image,
+  pdf: FileText,
+  doc: FileText,
+  text: FileText,
+};
+
+type Asset = {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  size?: number | null;
+};
+
 type Post = {
   id: string;
   title: string;
@@ -47,7 +62,7 @@ type Post = {
     id: string;
     name: string;
     description: string | null;
-    assets: { name: string; type: string }[];
+    assets: Asset[];
   };
 };
 
@@ -57,11 +72,23 @@ export function PostEditor({ post: initial }: { post: Post }) {
   const [content, setContent] = useState(initial.content ?? "");
   const [aiPrompt, setAiPrompt] = useState("");
   const [showAiPrompt, setShowAiPrompt] = useState(false);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(new Set());
   const [saving, startSave] = useTransition();
   const [generating, startGenerate] = useTransition();
   const [deleting, startDelete] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const assets = post.project?.assets ?? [];
+
+  function toggleAsset(id: string) {
+    setSelectedAssetIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function handleFieldChange(field: string, value: any) {
     setPost((p) => ({ ...p, [field]: value }));
@@ -87,13 +114,15 @@ export function PostEditor({ post: initial }: { post: Post }) {
 
   function handleGenerate() {
     startGenerate(async () => {
+      const selected = assets.filter((a) => selectedAssetIds.has(a.id));
       const generated = await generatePostContent({
         title: post.title,
         platform: post.platform,
         tone: post.tone,
         projectName: post.project.name,
         projectDescription: post.project.description,
-        assets: post.project.assets,
+        assets: assets.map((a) => ({ name: a.name, type: a.type })),
+        selectedAssets: selected.length > 0 ? selected : undefined,
         userPrompt: aiPrompt || undefined,
       });
       setContent(generated);
@@ -121,24 +150,58 @@ export function PostEditor({ post: initial }: { post: Post }) {
         />
 
         {/* AI generation */}
-        <div className="rounded-xl border border-border/50 bg-card p-4">
+        <div className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-violet-400" />
-              <span className="text-sm font-medium">Générer avec l&apos;IA</span>
-              {post.project.assets.length > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  · {post.project.assets.length} asset{post.project.assets.length > 1 ? "s" : ""} disponible{post.project.assets.length > 1 ? "s" : ""}
-                </span>
-              )}
+              <span className="text-sm font-medium text-violet-300">Générer avec l&apos;IA</span>
             </div>
             <button
               onClick={() => setShowAiPrompt((s) => !s)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs text-violet-400/70 hover:text-violet-300 transition-colors"
             >
               {showAiPrompt ? "Masquer" : "Instructions"}
             </button>
           </div>
+
+          {/* Asset selector */}
+          {assets.length > 0 && (
+            <div className="mb-3">
+              <p className="mb-1.5 text-xs text-muted-foreground">
+                Utiliser un asset comme contexte :
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {assets.map((asset) => {
+                  const Icon = ASSET_ICONS[asset.type] ?? File;
+                  const selected = selectedAssetIds.has(asset.id);
+                  return (
+                    <button
+                      key={asset.id}
+                      onClick={() => toggleAsset(asset.id)}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition-all",
+                        selected
+                          ? "border-violet-500/60 bg-violet-500/20 text-violet-300"
+                          : "border-border/50 bg-background/50 text-muted-foreground hover:border-violet-500/30 hover:text-foreground"
+                      )}
+                    >
+                      {selected ? (
+                        <Check className="h-3 w-3 shrink-0" />
+                      ) : (
+                        <Icon className="h-3 w-3 shrink-0" />
+                      )}
+                      <span className="max-w-[140px] truncate">{asset.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedAssetIds.size > 0 && (
+                <p className="mt-1.5 text-xs text-violet-400/70">
+                  {selectedAssetIds.size} asset{selectedAssetIds.size > 1 ? "s" : ""} sélectionné{selectedAssetIds.size > 1 ? "s" : ""} · le contenu sera transmis à l&apos;IA
+                </p>
+              )}
+            </div>
+          )}
 
           {showAiPrompt && (
             <textarea
@@ -153,7 +216,7 @@ export function PostEditor({ post: initial }: { post: Post }) {
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="flex items-center gap-2 rounded-lg bg-violet-500/15 px-3.5 py-2 text-sm font-medium text-violet-400 hover:bg-violet-500/25 transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 rounded-lg bg-violet-500/20 px-3.5 py-2 text-sm font-medium text-violet-300 hover:bg-violet-500/30 transition-colors disabled:opacity-60"
           >
             {generating ? (
               <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Génération en cours…</>

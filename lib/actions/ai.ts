@@ -20,6 +20,13 @@ const TONE_GUIDELINES: Record<string, string> = {
   promotional: "Ton promotionnel mais authentique, met en avant les bénéfices.",
 };
 
+type SelectedAsset = {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+};
+
 type GeneratePostParams = {
   title: string;
   platform: string;
@@ -27,20 +34,50 @@ type GeneratePostParams = {
   projectName: string;
   projectDescription?: string | null;
   assets?: { name: string; type: string }[];
+  selectedAssets?: SelectedAsset[];
   userPrompt?: string;
 };
 
+async function fetchAssetContent(asset: SelectedAsset): Promise<string | null> {
+  // Only fetch text-based assets
+  if (!["text", "doc", "pdf"].includes(asset.type)) return null;
+  try {
+    const res = await fetch(asset.url, { next: { revalidate: 0 } });
+    if (!res.ok) return null;
+    const text = await res.text();
+    // Truncate to avoid overwhelming the context
+    return text.slice(0, 8000);
+  } catch {
+    return null;
+  }
+}
+
 export async function generatePostContent(params: GeneratePostParams): Promise<string> {
   const {
-    title, platform, tone, projectName, projectDescription, assets, userPrompt,
+    title, platform, tone, projectName, projectDescription,
+    assets, selectedAssets, userPrompt,
   } = params;
 
   const platformGuide = PLATFORM_GUIDELINES[platform] ?? "Rédige un post adapté à la plateforme.";
   const toneGuide = tone ? TONE_GUIDELINES[tone] ?? "" : "";
 
-  const assetContext = assets && assets.length > 0
-    ? `\nAssets disponibles dans ce projet : ${assets.map((a) => `${a.name} (${a.type})`).join(", ")}.`
-    : "";
+  // Build asset context
+  let assetContext = "";
+
+  if (selectedAssets && selectedAssets.length > 0) {
+    const assetSections: string[] = [];
+    for (const asset of selectedAssets) {
+      const content = await fetchAssetContent(asset);
+      if (content) {
+        assetSections.push(`### ${asset.name} (${asset.type})\n${content}`);
+      } else {
+        assetSections.push(`### ${asset.name} (${asset.type}) — fichier visuel/binaire`);
+      }
+    }
+    assetContext = `\n**Assets sélectionnés pour contexte :**\n${assetSections.join("\n\n")}`;
+  } else if (assets && assets.length > 0) {
+    assetContext = `\nAssets disponibles dans ce projet : ${assets.map((a) => `${a.name} (${a.type})`).join(", ")}.`;
+  }
 
   const prompt = `Tu es un expert en content marketing et copywriting.
 
