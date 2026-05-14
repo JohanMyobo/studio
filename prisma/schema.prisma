@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Entity {
+  id        String   @id @default(cuid())
+  name      String
+  type      String?  // agency-nocode | agency-design | youtube | freelance | other
+  emoji     String   @default("⚡")
+  color     String   @default("#6366f1")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects  Project[]
+  contacts  Contact[]
+  brandKits BrandKit[]
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  client      String?
+  type        String?
+  status      String    @default("active") // active | paused | completed | archived
+  deadline    DateTime?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  entityId  String
+  entity    Entity    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  posts     Post[]
+  assets    Asset[]
+  contacts  Contact[]
+  phases    Phase[]
+  tasks     Task[]
+}
+
+model Phase {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#6366f1")
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks     Task[]
+}
+
+model Task {
+  id        String    @id @default(cuid())
+  title     String
+  notes     String?
+  status    String    @default("todo")    // todo | in-progress | in-review | done | cancelled
+  priority  String    @default("medium")  // low | medium | high | urgent
+  label     String?
+  deadline  DateTime?
+  order     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  projectId String
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  phaseId   String?
+  phase     Phase?    @relation(fields: [phaseId], references: [id], onDelete: SetNull)
+  subTasks  SubTask[]
+}
+
+model SubTask {
+  id        String   @id @default(cuid())
+  title     String
+  done      Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  title       String
+  content     String?
+  platform    String    // linkedin | twitter | instagram | facebook | tiktok
+  tone        String?   // professional | casual | storytelling | educational
+  status      String    @default("draft") // draft | scheduled | published | archived
+  scheduledAt DateTime?
+  publishedAt DateTime?
+  likes       Int?
+  views       Int?
+  comments    Int?
+  shares      Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Asset {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // image | pdf | doc | text | link
+  url       String
+  size      Int?
+  mimeType  String?
+  createdAt DateTime @default(now())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  company   String?
+  role      String?
+  status    String   @default("prospect") // prospect | qualified | client | lost
+  budget    Float?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entityId  String
+  entity    Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+}
+
+model BrandKit {
+  id        String   @id @default(cuid())
+  name      String   @default("Brand Kit")
+  tone      String?
+  audience  String?
+  style     String?
+  rules     String?
+  examples  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entityId String
+  entity   Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+}
