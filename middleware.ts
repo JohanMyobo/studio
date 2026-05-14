@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/api/login"];
+const PUBLIC_PATHS = ["/login", "/onboarding", "/api/login"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Always pass through public paths and Next.js internals
+  // Always inject pathname for layout
+  const response = NextResponse.next();
+  response.headers.set("x-pathname", pathname);
+
+  // Pass through public paths without auth check
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
-    return NextResponse.next();
+    return response;
   }
 
   // Check auth cookie
@@ -21,9 +25,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Inject pathname for sidebar active state
-  const response = NextResponse.next();
-  response.headers.set("x-pathname", pathname);
   return response;
 }
 

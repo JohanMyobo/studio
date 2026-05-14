@@ -21,9 +21,9 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";
-  const isOnboarding = pathname.startsWith("/onboarding");
+  const isPublicPage = pathname.startsWith("/onboarding") || pathname.startsWith("/login");
 
-  if (!isOnboarding) {
+  if (!isPublicPage) {
     const entities = await getEntities();
     if (entities.length === 0) redirect("/onboarding");
   }
@@ -33,7 +33,7 @@ export default async function RootLayout({
       <body className="font-sans antialiased">
         <ThemeProvider>
           <TooltipProvider>
-            {isOnboarding ? (
+            {isPublicPage ? (
               <>{children}</>
             ) : (
               <div className="flex h-screen overflow-hidden">
