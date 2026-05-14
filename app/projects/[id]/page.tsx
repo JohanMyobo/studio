@@ -195,7 +195,9 @@ export default async function ProjectDetailPage({
                 },
                 {
                   label: "Créé le",
-                  value: new Date(project.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
+                  value: project.created_at
+                    ? new Date(project.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
+                    : null,
                 },
               ].map(({ label, value }) =>
                 value ? (

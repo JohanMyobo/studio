@@ -1,6 +1,7 @@
 import { createProject } from "@/lib/actions/projects";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { SubmitButton } from "@/components/submit-button";
 
 const PROJECT_TYPES = [
   "Site web", "Application mobile", "Branding", "Marketing",
@@ -31,7 +32,7 @@ export default function NewProjectPage() {
               name="name"
               required
               placeholder="Refonte site XYZ, App mobile ABC…"
-              className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-white/20 placeholder:text-muted-foreground"
+              className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-foreground/20 placeholder:text-muted-foreground"
             />
           </div>
 
@@ -40,15 +41,15 @@ export default function NewProjectPage() {
               <label className="mb-1.5 block text-sm font-medium">Client</label>
               <input
                 name="client"
-                placeholder="Nom du client"
-                className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-white/20 placeholder:text-muted-foreground"
+                placeholder="Client, Perso, Side project…"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-foreground/20 placeholder:text-muted-foreground"
               />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium">Type</label>
               <select
                 name="type"
-                className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-white/20 text-foreground"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-foreground/20 text-foreground"
               >
                 <option value="">Sélectionner…</option>
                 {PROJECT_TYPES.map((t) => (
@@ -64,7 +65,7 @@ export default function NewProjectPage() {
               <select
                 name="status"
                 defaultValue="active"
-                className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-white/20 text-foreground"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-foreground/20 text-foreground"
               >
                 <option value="active">Actif</option>
                 <option value="paused">En pause</option>
@@ -77,7 +78,7 @@ export default function NewProjectPage() {
               <input
                 name="deadline"
                 type="date"
-                className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-white/20 text-foreground [color-scheme:dark]"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-foreground/20 text-foreground [color-scheme:dark]"
               />
             </div>
           </div>
@@ -88,20 +89,15 @@ export default function NewProjectPage() {
               name="description"
               rows={3}
               placeholder="Contexte, objectifs, notes importantes…"
-              className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-white/20 placeholder:text-muted-foreground resize-none"
+              className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-foreground/20 placeholder:text-muted-foreground resize-none"
             />
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              className="rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black hover:bg-white/90 transition-colors"
-            >
-              Créer le projet
-            </button>
+            <SubmitButton label="Créer le projet" loadingLabel="Création…" />
             <Link
               href="/projects"
-              className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border/80 transition-colors"
+              className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Annuler
             </Link>
