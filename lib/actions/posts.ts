@@ -5,6 +5,15 @@ import { getCurrentEntityId } from "@/lib/entity";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+export async function getPost(id: string) {
+  const { data } = await supabase
+    .from("posts")
+    .select("*, project:projects(id, name, description, assets(*))")
+    .eq("id", id)
+    .single();
+  return data;
+}
+
 export async function createPost(formData: FormData) {
   const title = formData.get("title") as string;
   const projectId = formData.get("projectId") as string;
