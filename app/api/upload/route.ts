@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, unlink, mkdir } from "fs/promises";
 import path from "path";
-import { prisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabase/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,16 +34,18 @@ export async function POST(request: NextRequest) {
       ? "doc"
       : "text";
 
-    const asset = await prisma.asset.create({
-      data: {
+    const { data: asset } = await supabase
+      .from("assets")
+      .insert({
         name: file.name,
         type,
         url,
         size: file.size,
-        mimeType: mime,
-        projectId,
-      },
-    });
+        mime_type: mime,
+        project_id: projectId,
+      })
+      .select()
+      .single();
 
     return NextResponse.json(asset);
   } catch (err) {
@@ -57,10 +59,14 @@ export async function DELETE(request: NextRequest) {
     const id = request.nextUrl.searchParams.get("id");
     if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
-    const asset = await prisma.asset.findUnique({ where: { id } });
+    const { data: asset } = await supabase
+      .from("assets")
+      .select("url")
+      .eq("id", id)
+      .single();
+
     if (!asset) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    // Delete file from disk
     try {
       const filepath = path.join(process.cwd(), "public", asset.url);
       await unlink(filepath);
@@ -68,7 +74,7 @@ export async function DELETE(request: NextRequest) {
       // File may not exist, continue
     }
 
-    await prisma.asset.delete({ where: { id } });
+    await supabase.from("assets").delete().eq("id", id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error(err);

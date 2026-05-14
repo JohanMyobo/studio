@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getProjects } from "@/lib/actions/projects";
 import { getPosts } from "@/lib/actions/posts";
 import { getCurrentEntityId } from "@/lib/entity";
-import { prisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabase/client";
+import { getEntity } from "@/lib/actions/entities";
 import {
   FolderKanban, FileText, Users, TrendingUp, ArrowUpRight, Plus,
 } from "lucide-react";
@@ -15,13 +16,11 @@ export default async function DashboardPage() {
     getPosts(),
   ]);
 
-  const contactsCount = entityId
-    ? await prisma.contact.count({ where: { entityId } })
-    : 0;
+  const { count: contactsCount } = entityId
+    ? await supabase.from("contacts").select("*", { count: "exact", head: true }).eq("entity_id", entityId)
+    : { count: 0 };
 
-  const entity = entityId
-    ? await prisma.entity.findUnique({ where: { id: entityId } })
-    : null;
+  const entity = entityId ? await getEntity(entityId) : null;
 
   const stats = [
     {
