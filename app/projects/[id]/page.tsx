@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { AssetUploader } from "@/components/projects/asset-uploader";
 import { TasksContainer } from "@/components/tasks/tasks-container";
+import { DeleteProjectButton } from "@/components/projects/delete-project-button";
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-emerald-500/15 text-emerald-400",
@@ -74,13 +75,16 @@ export default async function ProjectDetailPage({
               <p className="mt-2 text-sm text-muted-foreground max-w-xl">{project.description}</p>
             )}
           </div>
-          <Link
-            href={`/posts/new?projectId=${project.id}`}
-            className="flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            <Plus className="h-4 w-4" />
-            Créer un post
-          </Link>
+          <div className="flex items-center gap-2">
+            <DeleteProjectButton projectId={project.id} />
+            <Link
+              href={`/posts/new?projectId=${project.id}`}
+              className="flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <Plus className="h-4 w-4" />
+              Créer un post
+            </Link>
+          </div>
         </div>
       </div>
 
