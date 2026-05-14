@@ -23,12 +23,13 @@ export async function createEntity(formData: FormData) {
 
   if (!name?.trim()) return;
 
-  const { data: entity } = await supabase
+  const { data: entity, error } = await supabase
     .from("entities")
     .insert({ name: name.trim(), type, emoji, color })
     .select()
     .single();
 
+  if (error) console.error("[createEntity] Supabase error:", JSON.stringify(error));
   if (!entity) return;
 
   const cookieStore = await cookies();
