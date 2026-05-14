@@ -4,10 +4,10 @@ import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
-import { getCurrentEntityId } from "@/lib/entity";
+import { getCurrentEntityId, ENTITY_COOKIE } from "@/lib/entity";
 import { getEntities } from "@/lib/actions/entities";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -25,7 +25,19 @@ export default async function RootLayout({
 
   if (!isPublicPage) {
     const entities = await getEntities();
-    if (entities.length === 0) redirect("/onboarding");
+    if (entities.length === 0) {
+      redirect("/onboarding");
+    } else {
+      // Auto-select first entity if no cookie set (e.g. new device/browser)
+      const entityId = await getCurrentEntityId();
+      if (!entityId) {
+        const cookieStore = await cookies();
+        cookieStore.set(ENTITY_COOKIE, entities[0].id, {
+          path: "/",
+          maxAge: 60 * 60 * 24 * 365,
+        });
+      }
+    }
   }
 
   return (
