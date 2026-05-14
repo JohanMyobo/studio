@@ -37,7 +37,7 @@ export default async function ProjectDetailPage({
   const project = await getProject(id);
   if (!project) notFound();
 
-  const doneTasks = project.tasks.filter((t) => t.status === "done").length;
+  const doneTasks = (project.tasks as any[]).filter((t) => t.status === "done").length;
 
   return (
     <div className="p-8">
@@ -156,7 +156,7 @@ export default async function ProjectDetailPage({
               </div>
             ) : (
               <div className="space-y-2">
-                {project.posts.map((post) => (
+                {(project.posts as any[]).map((post) => (
                   <Link
                     key={post.id}
                     href={`/posts/${post.id}`}
@@ -233,7 +233,7 @@ export default async function ProjectDetailPage({
             <div className="rounded-xl border border-border/50 bg-card p-5">
               <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Phases</h3>
               <div className="space-y-2">
-                {project.phases.map((phase) => (
+                {(project.phases as any[]).map((phase) => (
                   <div key={phase.id} className="flex items-center gap-2">
                     <div
                       className="h-2.5 w-2.5 rounded-full shrink-0"
@@ -241,7 +241,7 @@ export default async function ProjectDetailPage({
                     />
                     <span className="text-sm">{phase.name}</span>
                     <span className="ml-auto text-xs text-muted-foreground">
-                      {project.tasks.filter((t) => t.phaseId === phase.id).length}
+                      {(project.tasks as any[]).filter((t) => t.phaseId === phase.id).length}
                     </span>
                   </div>
                 ))}

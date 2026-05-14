@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabase/client";
 import { revalidatePath } from "next/cache";
 
 // ── Tasks ──────────────────────────────────────────────
@@ -10,22 +10,16 @@ export async function createTask(formData: FormData) {
   const title = formData.get("title") as string;
   if (!projectId || !title?.trim()) return;
 
-  const count = await prisma.task.count({ where: { projectId } });
-
-  await prisma.task.create({
-    data: {
-      title: title.trim(),
-      projectId,
-      status: (formData.get("status") as string) || "todo",
-      priority: (formData.get("priority") as string) || "medium",
-      phaseId: (formData.get("phaseId") as string) || null,
-      label: (formData.get("label") as string) || null,
-      deadline: formData.get("deadline")
-        ? new Date(formData.get("deadline") as string)
-        : null,
-      notes: (formData.get("notes") as string) || null,
-      order: count,
-    },
+  await supabase.from("tasks").insert({
+    title: title.trim(),
+    project_id: projectId,
+    status: (formData.get("status") as string) || "todo",
+    priority: (formData.get("priority") as string) || "medium",
+    phase_id: (formData.get("phaseId") as string) || null,
+    label: (formData.get("label") as string) || null,
+    deadline: (formData.get("deadline") as string) || null,
+    notes: (formData.get("notes") as string) || null,
+    order: 0,
   });
 
   revalidatePath(`/projects/${projectId}`);
@@ -44,14 +38,30 @@ export async function updateTask(
     order: number;
   }>
 ) {
-  const task = await prisma.task.update({ where: { id }, data });
-  revalidatePath(`/projects/${task.projectId}`);
+  const { phaseId, deadline, ...rest } = data as any;
+  const payload: any = { ...rest };
+  if (phaseId !== undefined) payload.phase_id = phaseId;
+  if (deadline !== undefined) payload.deadline = deadline ? new Date(deadline).toISOString() : null;
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .update(payload)
+    .eq("id", id)
+    .select("project_id")
+    .single();
+
+  if (task) revalidatePath(`/projects/${task.project_id}`);
 }
 
 export async function deleteTask(id: string) {
-  const task = await prisma.task.findUnique({ where: { id } });
-  await prisma.task.delete({ where: { id } });
-  if (task) revalidatePath(`/projects/${task.projectId}`);
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("project_id")
+    .eq("id", id)
+    .single();
+
+  await supabase.from("tasks").delete().eq("id", id);
+  if (task) revalidatePath(`/projects/${task.project_id}`);
 }
 
 export async function reorderTasks(
@@ -59,41 +69,42 @@ export async function reorderTasks(
 ) {
   await Promise.all(
     tasks.map(({ id, order, status }) =>
-      prisma.task.update({ where: { id }, data: { order, status } })
+      supabase.from("tasks").update({ order, status }).eq("id", id)
     )
   );
 }
 
 export async function getTasksForProject(projectId: string) {
-  return prisma.task.findMany({
-    where: { projectId },
-    include: {
-      subTasks: { orderBy: { order: "asc" } },
-      phase: true,
-    },
-    orderBy: { order: "asc" },
-  });
+  const { data } = await supabase
+    .from("tasks")
+    .select("*, sub_tasks(*), phase:phases(*)")
+    .eq("project_id", projectId)
+    .order("order", { ascending: true });
+
+  return (data ?? []).map((t: any) => ({
+    ...t,
+    subTasks: t.sub_tasks ?? [],
+    phaseId: t.phase_id,
+  }));
 }
 
 // ── SubTasks ────────────────────────────────────────────
 
 export async function createSubTask(taskId: string, title: string) {
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
-  const count = await prisma.subTask.count({ where: { taskId } });
-
-  await prisma.subTask.create({
-    data: { title, taskId, order: count },
+  await supabase.from("sub_tasks").insert({
+    title,
+    task_id: taskId,
+    done: false,
+    order: 0,
   });
-
-  if (task) revalidatePath(`/projects/${task.projectId}`);
 }
 
 export async function toggleSubTask(id: string, done: boolean) {
-  await prisma.subTask.update({ where: { id }, data: { done } });
+  await supabase.from("sub_tasks").update({ done }).eq("id", id);
 }
 
 export async function deleteSubTask(id: string) {
-  await prisma.subTask.delete({ where: { id } });
+  await supabase.from("sub_tasks").delete().eq("id", id);
 }
 
 // ── Phases ─────────────────────────────────────────────
@@ -103,21 +114,21 @@ export async function createPhase(formData: FormData) {
   const name = formData.get("name") as string;
   if (!projectId || !name?.trim()) return;
 
-  const count = await prisma.phase.count({ where: { projectId } });
-  await prisma.phase.create({
-    data: {
-      name: name.trim(),
-      color: (formData.get("color") as string) || "#6366f1",
-      projectId,
-      order: count,
-    },
+  await supabase.from("phases").insert({
+    name: name.trim(),
+    color: (formData.get("color") as string) || "#6366f1",
+    project_id: projectId,
+    order: 0,
   });
+
   revalidatePath(`/projects/${projectId}`);
 }
 
 export async function getPhasesForProject(projectId: string) {
-  return prisma.phase.findMany({
-    where: { projectId },
-    orderBy: { order: "asc" },
-  });
+  const { data } = await supabase
+    .from("phases")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("order", { ascending: true });
+  return data ?? [];
 }

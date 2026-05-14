@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabase/client";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -23,9 +23,13 @@ export async function createEntity(formData: FormData) {
 
   if (!name?.trim()) return;
 
-  const entity = await prisma.entity.create({
-    data: { name: name.trim(), type, emoji, color },
-  });
+  const { data: entity } = await supabase
+    .from("entities")
+    .insert({ name: name.trim(), type, emoji, color })
+    .select()
+    .single();
+
+  if (!entity) return;
 
   const cookieStore = await cookies();
   cookieStore.set(ENTITY_COOKIE, entity.id, {
@@ -55,19 +59,28 @@ export async function updateEntity(formData: FormData) {
 
   if (!id || !name?.trim()) return;
 
-  await prisma.entity.update({
-    where: { id },
-    data: { name: name.trim(), type, emoji, color },
-  });
+  await supabase
+    .from("entities")
+    .update({ name: name.trim(), type, emoji, color })
+    .eq("id", id);
 
   revalidatePath("/");
   redirect("/settings");
 }
 
 export async function getEntities() {
-  return prisma.entity.findMany({ orderBy: { createdAt: "asc" } });
+  const { data } = await supabase
+    .from("entities")
+    .select("*")
+    .order("created_at", { ascending: true });
+  return data ?? [];
 }
 
 export async function getEntity(id: string) {
-  return prisma.entity.findUnique({ where: { id } });
+  const { data } = await supabase
+    .from("entities")
+    .select("*")
+    .eq("id", id)
+    .single();
+  return data;
 }
