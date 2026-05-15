@@ -23,18 +23,22 @@ export async function createPost(formData: FormData) {
 
   const scheduledAtRaw = formData.get("scheduledAt") as string;
 
-  await supabase.from("posts").insert({
-    title: title.trim(),
-    content: (formData.get("content") as string) || null,
-    platform,
-    tone: (formData.get("tone") as string) || null,
-    status: (formData.get("status") as string) || "draft",
-    scheduled_at: scheduledAtRaw ? new Date(scheduledAtRaw).toISOString() : null,
-    project_id: projectId,
-  });
+  const { data: post } = await supabase
+    .from("posts")
+    .insert({
+      title: title.trim(),
+      content: (formData.get("content") as string) || null,
+      platform,
+      tone: (formData.get("tone") as string) || null,
+      status: (formData.get("status") as string) || "draft",
+      scheduled_at: scheduledAtRaw ? new Date(scheduledAtRaw).toISOString() : null,
+      project_id: projectId,
+    })
+    .select()
+    .single();
 
   revalidatePath("/posts");
-  redirect("/posts");
+  redirect(`/posts/${post?.id}`);
 }
 
 export async function updatePost(

@@ -144,7 +144,7 @@ export default async function NewPostPage({
               <textarea
                 name="content"
                 rows={6}
-                placeholder="Rédige ton post ici… (la génération IA sera disponible bientôt)"
+                placeholder="Optionnel — tu pourras générer le contenu avec l'IA après création"
                 className="w-full rounded-lg border border-border bg-card px-3 py-2.5 text-sm outline-none focus:border-white/20 placeholder:text-muted-foreground resize-none"
               />
             </div>
