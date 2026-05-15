@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase/client";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
+    revalidatePath(`/projects/${projectId}`);
     return NextResponse.json(asset);
   } catch (err) {
     console.error(err);
@@ -86,7 +88,14 @@ export async function DELETE(request: NextRequest) {
       // Non-storage URL, skip
     }
 
-    await supabase.from("assets").delete().eq("id", id);
+    const { data: deleted } = await supabase
+      .from("assets")
+      .delete()
+      .eq("id", id)
+      .select("project_id")
+      .single();
+
+    if (deleted?.project_id) revalidatePath(`/projects/${deleted.project_id}`);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error(err);
