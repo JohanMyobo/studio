@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const BUCKET = "project-assets";
 
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
     const storageKey = `${projectId}/${Date.now()}_${safeName}`;
 
-    const { error: storageError } = await supabase.storage
+    const { error: storageError } = await supabaseAdmin.storage
       .from(BUCKET)
       .upload(storageKey, buffer, { contentType: mime, upsert: false });
 
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: storageError.message }, { status: 500 });
     }
 
-    const { data: { publicUrl } } = supabase.storage
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from(BUCKET)
       .getPublicUrl(storageKey);
 
@@ -79,7 +80,7 @@ export async function DELETE(request: NextRequest) {
       const urlObj = new URL(asset.url);
       const pathParts = urlObj.pathname.split(`/${BUCKET}/`);
       if (pathParts.length > 1) {
-        await supabase.storage.from(BUCKET).remove([pathParts[1]]);
+        await supabaseAdmin.storage.from(BUCKET).remove([pathParts[1]]);
       }
     } catch {
       // Non-storage URL, skip
