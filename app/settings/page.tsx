@@ -1,6 +1,6 @@
 import { getCurrentEntityId } from "@/lib/entity";
-import { getEntity } from "@/lib/actions/entities";
-import { updateEntity } from "@/lib/actions/entities";
+import { getEntity, updateEntity } from "@/lib/actions/entities";
+import { VoiceEditor } from "@/components/settings/voice-editor";
 import { redirect } from "next/navigation";
 
 const ENTITY_TYPES = [
@@ -116,13 +116,8 @@ export default async function SettingsPage() {
           </div>
         </div>
 
-        {/* Coming soon */}
-        <div className="rounded-xl border border-border/50 bg-card p-6 opacity-50">
-          <h2 className="mb-1 text-sm font-semibold">Authentification</h2>
-          <p className="text-xs text-muted-foreground">
-            Clerk — brancher les clés dans <code className="rounded bg-muted px-1 py-0.5 text-xs">.env</code> pour activer l&apos;auth.
-          </p>
-        </div>
+        {/* Voice & Style */}
+        <VoiceEditor entityId={entity.id} voiceRaw={(entity as any).voice ?? null} />
       </div>
     </div>
   );

@@ -85,3 +85,8 @@ export async function getEntity(id: string) {
     .single();
   return data;
 }
+
+export async function updateEntityVoice(id: string, voice: string) {
+  await supabase.from("entities").update({ voice }).eq("id", id);
+  revalidatePath("/settings");
+}
