@@ -6,6 +6,7 @@ import {
   Calendar, CheckSquare, ExternalLink
 } from "lucide-react";
 import { AssetUploader } from "@/components/projects/asset-uploader";
+import { ToolsEditor } from "@/components/projects/tools-editor";
 import { TasksContainer } from "@/components/tasks/tasks-container";
 import { DeleteProjectButton } from "@/components/projects/delete-project-button";
 
@@ -118,6 +119,20 @@ export default async function ProjectDetailPage({
               initialTasks={project.tasks as any}
               phases={project.phases}
               projectId={project.id}
+            />
+          </div>
+
+          {/* Tools */}
+          <div className="rounded-xl border border-border/50 bg-card p-6">
+            <div className="mb-4">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                🔧 Outils utilisés
+              </h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Utilisés comme contexte pour la génération IA</p>
+            </div>
+            <ToolsEditor
+              projectId={project.id}
+              initialTools={(project as any).tools ?? []}
             />
           </div>
 

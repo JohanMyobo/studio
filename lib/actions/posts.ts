@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 export async function getPost(id: string) {
   const { data } = await supabase
     .from("posts")
-    .select("*, project:projects(id, name, description, assets(*))")
+    .select("*, project:projects(id, name, description, tools, assets(*))")
     .eq("id", id)
     .single();
   return data;

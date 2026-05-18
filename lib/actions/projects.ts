@@ -52,6 +52,11 @@ export async function deleteProject(id: string) {
   redirect("/projects");
 }
 
+export async function updateProjectTools(id: string, tools: string[]) {
+  await supabase.from("projects").update({ tools }).eq("id", id);
+  revalidatePath(`/projects/${id}`);
+}
+
 export async function getProjects() {
   const entityId = await getCurrentEntityId();
   if (!entityId) return [];

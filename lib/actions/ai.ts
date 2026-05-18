@@ -41,6 +41,7 @@ type GeneratePostParams = {
   tone?: string | null;
   projectName: string;
   projectDescription?: string | null;
+  tools?: string[];
   assets?: { name: string; type: string }[];
   selectedAssets?: SelectedAsset[];
   userPrompt?: string;
@@ -75,7 +76,7 @@ function buildVoiceBlock(voice: VoiceData): string {
 export async function generatePostContent(params: GeneratePostParams): Promise<string> {
   const {
     title, platform, tone, projectName, projectDescription,
-    assets, selectedAssets, userPrompt,
+    tools, assets, selectedAssets, userPrompt,
   } = params;
 
   // Fetch author's voice/style from their entity
@@ -119,6 +120,7 @@ export async function generatePostContent(params: GeneratePostParams): Promise<s
 ${voiceBlock ? `---\n## VOIX DE L'AUTEUR\n${voiceBlock}\n---\n` : ""}
 **Plateforme :** ${platform.charAt(0).toUpperCase() + platform.slice(1)}
 **Projet :** ${projectName}${projectDescription ? ` — ${projectDescription}` : ""}
+${tools && tools.length > 0 ? `**Outils utilisés dans ce projet :** ${tools.join(", ")}` : ""}
 **Sujet :** ${title}
 ${toneGuide ? `**Ton :** ${toneGuide}` : ""}
 ${assetContext ? `\n${assetContext}` : ""}

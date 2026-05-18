@@ -62,6 +62,7 @@ type Post = {
     id: string;
     name: string;
     description: string | null;
+    tools?: string[] | null;
     assets: Asset[];
   };
 };
@@ -121,6 +122,7 @@ export function PostEditor({ post: initial }: { post: Post }) {
         tone: post.tone,
         projectName: post.project.name,
         projectDescription: post.project.description,
+        tools: post.project.tools?.filter(Boolean) ?? [],
         assets: assets.map((a) => ({ name: a.name, type: a.type })),
         selectedAssets: selected.length > 0 ? selected : undefined,
         userPrompt: aiPrompt || undefined,
